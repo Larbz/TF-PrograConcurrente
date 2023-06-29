@@ -10,13 +10,17 @@ import (
 )
 
 type Player struct {
-	Name      string
-	Tokens    int
-	positionX int
-	positionY int
-	index     int
-	inGame    bool
-	delay     int
+	Name       string
+	Tokens     int
+	positionX  int
+	positionY  int
+	index      int
+	inGame     bool
+	delay      int
+	freezed    bool
+	tokensWon  int
+	tokensLost int
+	rpcWon     int
 }
 type Mensaje struct {
 	Numero int

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+
 	// "errors"
 	"fmt"
 	// "log"
@@ -32,19 +33,27 @@ import (
 // }
 
 type Player struct {
-	Name      string
-	Tokens    int
-	positionX int
-	positionY int
-	index     int
-	inGame    bool
-	delay     int
-	freezed   bool
+	Name       string
+	Tokens     int
+	positionX  int
+	positionY  int
+	index      int
+	inGame     bool
+	delay      int
+	freezed    bool
+	tokensWon  int
+	tokensLost int
+	rpcWon     int
 }
 
 type PlayerPointsTable struct {
-	PlayerName   string `json:"playerName"`
-	PlayerPoints int    `json:"playerPoints"`
+	PlayerName       string `json:"playerName"`
+	PlayerPoints     int    `json:"playerPoints"`
+	PlayerPositionX  int    `json:"playerPositionX"`
+	PlayerPositionY  int    `json:"playerPositionY"`
+	PlayerTokensWon  int    `json:"playerTokensWon"`
+	PlayerTokensLost int    `json:"playerTokensLost"`
+	PlayerRpcWon     int    `json:"playerRpcWon"`
 }
 
 var mutex sync.Mutex
@@ -65,8 +74,8 @@ type Message struct {
 }
 
 func main() {
-	c:=cors.Default()
-	handler:=c.Handler(http.HandlerFunc(imprimir))
+	c := cors.Default()
+	handler := c.Handler(http.HandlerFunc(imprimir))
 	http.HandleFunc("/points", imprimir)
 	go http.ListenAndServe(":9000", handler)
 
@@ -129,7 +138,7 @@ func imprimir(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	var playersPoints []PlayerPointsTable
 	for _, player := range teams {
-		playersPoints = append(playersPoints, PlayerPointsTable{PlayerName: player.Name, PlayerPoints: player.Tokens})
+		playersPoints = append(playersPoints, PlayerPointsTable{PlayerName: player.Name, PlayerPoints: player.Tokens, PlayerPositionX: player.positionX, PlayerPositionY: player.positionY,PlayerTokensWon: player.tokensWon,PlayerTokensLost:player.tokensLost,PlayerRpcWon: player.rpcWon})
 	}
 	//SERIALIZAMOS
 	jsonData, err := json.Marshal(playersPoints)
@@ -161,6 +170,9 @@ func manejador(conn net.Conn, wg *sync.WaitGroup) {
 	playerStart.delay = 1
 	playerStart.freezed = false
 	playerStart.Tokens = tokensDefault
+	playerStart.tokensWon = 0
+	playerStart.tokensLost = 0
+	playerStart.rpcWon = 0
 	generatePlayer(playerStart)
 	fmt.Println(playerStart)
 
@@ -258,9 +270,12 @@ func move(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan bo
 			}
 		}
 
-	} else if player.positionX == 1 && player.positionY != player.index && teams[player.index-1].inGame {
+	} else if player.positionX == 1 && player.positionY != player.index && teams[player.positionY-1].inGame {
+		mutex.Lock()
 		player.Tokens += 1
 		teams[player.positionY-1].Tokens -= 1
+		player.tokensWon+=1
+		teams[player.positionY-1].tokensLost+=1
 		fmt.Printf("%s obtuvo 1 token de %s\n", player.Name, teams[player.positionY-1].Name)
 		if teams[player.positionY-1].Tokens == 0 {
 			teams[player.positionY-1].inGame = false
@@ -268,6 +283,8 @@ func move(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan bo
 		}
 		player.positionX = 1
 		player.positionY = player.index
+		mutex.Unlock()
+
 	} else {
 		if player.positionY != player.index {
 			player.positionX -= 1
@@ -302,6 +319,7 @@ func collisions(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop c
 				if result == "Win" {
 					// player.Tokens += 1
 					// teams[ind].Tokens -= 1
+					player.rpcWon+=1
 					fmt.Printf("%s lose against %s\n", teams[ind].Name, player.Name)
 					// if teams[ind].Tokens == 0{
 					// teams[ind].inGame = false
@@ -321,6 +339,7 @@ func collisions(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop c
 					fmt.Printf("%s lose against %s\n", player.Name, teams[ind].Name)
 					// if player.Tokens == 0 {
 					// player.inGame = false
+					teams[ind].rpcWon+=1
 					player.positionX = 1
 					player.positionY = player.index
 					player.delay = 5
