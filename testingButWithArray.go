@@ -20,7 +20,6 @@ var wgGroup []*sync.WaitGroup
 var chGroup []chan Player
 var teams []*Player
 var stopGroup []chan bool
-var matriz [][]int
 
 func main() {
 	team1 := Player{Name: "Luis", Tokens: 3, positionX: 1, positionY: 1, index: 1, inGame: true}
@@ -67,7 +66,7 @@ func manage(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan 
 	// for i := 0; i < 20; i++ {
 	for !isGameFinished() {
 		if player.inGame {
-
+			
 			wg.Add(1)
 			// go rps(player, wg, chPlayer, stop)
 			go move(player, wg, chPlayer, stop)
@@ -111,7 +110,7 @@ func move(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan bo
 		} else if player.positionY > len(teams) {
 			player.positionY %= len(teams)
 		}
-		for !teams[player.positionY-1].inGame && player.positionY != player.index {
+		for !teams[player.positionY-1].inGame && player.positionY != player.index {//SE VERIFICA QUE CAIGAMOS EN UNA FILA UNICAMENTE DE JUGADORES QUE ESTEN VIVOS
 			player.positionY += 1 * multiplier
 			if player.positionY < 1 {
 				player.positionY = len(teams)
@@ -170,7 +169,7 @@ func collisions(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop c
 							teams[ind].inGame = false
 							teams[ind].positionX=1
 							teams[ind].positionY=teams[ind].index
-							fmt.Printf("%s fue eliminado del juego", teams[ind].Name)
+							fmt.Printf("%s fue eliminado del juego\n", teams[ind].Name)
 						}else{
 							teams[ind].positionX=1
 							teams[ind].positionY=teams[ind].index
@@ -184,7 +183,7 @@ func collisions(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop c
 							player.inGame=false
 							player.positionX=1
 							player.positionY=player.index
-							fmt.Printf("%s fue eliminado del juego", player.Name)
+							fmt.Printf("%s fue eliminado del juego\n", player.Name)
 						}else{
 							player.positionX=1
 							player.positionY=player.index
