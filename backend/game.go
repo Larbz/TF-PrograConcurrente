@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"log"
+	"sort"
 
 	// "errors"
 	"fmt"
@@ -71,7 +72,7 @@ var cantTeams int
 var playerStart Player
 var points int
 var updating bool
-
+var firstTimeReadTable bool
 // var upgrader = websocket.Upgrader{}
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -86,6 +87,7 @@ type Message struct {
 }
 
 func main() {
+	firstTimeReadTable=true
 	// c := cors.Default()
 	// handler := c.Handler(http.HandlerFunc(imprimir))
 	// http.HandleFunc("/points", imprimir)
@@ -442,7 +444,8 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	for !isGameFinished() {
 		// Simulamos un cambio en la base de datos cada 5 segundos
-		if updating {
+		if updating || firstTimeReadTable {
+			firstTimeReadTable=false
 			mutex.Lock()
 			data := obtenerDatosActualizados() // Obtén los datos actualizados de la base de datos
 			mutex.Unlock()
@@ -490,6 +493,9 @@ func obtenerDatosActualizados() interface{} {
 			PlayerRpcWon: player.rpcWon,
 		})
 	}
+	sort.Slice(arrResponse, func(i, j int) bool {
+		return arrResponse[i].PlayerPoints < arrResponse[j].PlayerPoints
+	})
 	return arrResponse
 }
 
