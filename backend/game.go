@@ -290,6 +290,7 @@ func move(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan bo
 		}
 
 	} else if player.positionX == 1 && player.positionY != player.index && teams[player.positionY-1].inGame {
+		//
 		mutex.Lock()
 		player.Tokens += 1
 		teams[player.positionY-1].Tokens -= 1
