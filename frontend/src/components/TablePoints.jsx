@@ -1,45 +1,50 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { TableContainer, TablePointsContainer } from "../styles/components/TablePoints";
 // import io from "socket.io-client";
-// const socket = new WebSocket("ws://localhost:8050/websoc");
+const socket = new WebSocket("ws://localhost:3000/ws");
 export const TablePoints = () => {
     const [tableInfo, setTableInfo] = useState([]);
-    const [contador, setContador] = useState(0);
+    // const [contador, setContador] = useState(0);
     // const [puntaje, setPuntaje] = useState(0);
-    const fillMyTable = async () => {
-        const response = await fetch("http://localhost:9000");
-        const data = await response.json();
-        const dataOrdered = data.sort((a, b) => b.playerPoints - a.playerPoints);
-        setTableInfo(dataOrdered);
-    };
+    // const fillMyTable = async () => {
+    //     const response = await fetch("http://localhost:9000");
+    //     const data = await response.json();
+    //     const dataOrdered = data.sort((a, b) => b.playerPoints - a.playerPoints);
+    //     setTableInfo(dataOrdered);
+    // };
 
     // const [message, setMessage] = useState("");
     // const [inputValue, setInputValue] = useState("");
 
-    // useEffect(() => {
-    //     const socket = io("http://localhost:8050");
+    useEffect(() => {
+        // const socket = io("http://localhost:8050");
 
-    //     socket.on = () => {
-    //         setMessage("Connected");
-    //     };
+        // socket.on = () => {
+        //     setMessage("Connected");
+        // };
 
-    //     socket.onmessage = (e) => {
-    //         setMessage("Get message from server: " + e.data);
-    //     };
-    //     // socket.on("actualizacionPuntaje",(nuevoPuntaje)=>{
-    //     //     setMessage(nuevoPuntaje)
-    //     // })
-    //     socket.on('actualizacionPuntaje',(nuevoMessage)=>{
-    //         setMessage(nuevoMessage)
-    //         console.log('asd')
-    //     })
-    //     // socket.onclose=()=>{
-    //     //     socket.close();
-    //     // }
-    //     // return () => {
-    //     //     socket.close();
-    //     // };
-    // }, []);
+        socket.onmessage = (e) => {
+            // setMessage("Get message from server: " + e.data);
+            const data = JSON.parse(e.data);
+            const dataOrdered = data.sort((a, b) => b.playerPoints - a.playerPoints);
+            setTableInfo(dataOrdered);
+            // setTableInfo(data)
+            console.log(data);
+        };
+        // socket.on("actualizacionPuntaje",(nuevoPuntaje)=>{
+        //     setMessage(nuevoPuntaje)
+        // })
+        // socket.on('actualizacionPuntaje',(nuevoMessage)=>{
+        //     setMessage(nuevoMessage)
+        //     console.log('asd')
+        // })
+        // socket.onclose=()=>{
+        //     socket.close();
+        // }
+        // return () => {
+        //     socket.close();
+        // };
+    }, []);
 
     // const handleClick = useCallback(
     //     (e) => {
@@ -58,28 +63,28 @@ export const TablePoints = () => {
     //     setInputValue(e.target.value);
     // }, []);
 
-    useEffect(() => {
-        let intervalId;
-        // const interval = setInterval(async() => {
-        // fillMyTable()
+    // useEffect(() => {
+    //     let intervalId;
+    //     // const interval = setInterval(async() => {
+    //     // fillMyTable()
 
-        const iniciarIntervalo = () => {
-            // Establecer el intervalo de 3 segundos
-            intervalId = setInterval(fillMyTable, 1000);
-        };
+    //     const iniciarIntervalo = () => {
+    //         // Establecer el intervalo de 3 segundos
+    //         intervalId = setInterval(fillMyTable, 1000);
+    //     };
 
-        const detenerIntervalo = () => {
-            // Detener el intervalo
-            clearInterval(intervalId);
-        };
-        fillMyTable();
-        setTimeout(iniciarIntervalo, 1000);
-        // }, 3000);
-        return () => {
-            clearTimeout();
-            detenerIntervalo();
-        };
-    }, []);
+    //     const detenerIntervalo = () => {
+    //         // Detener el intervalo
+    //         clearInterval(intervalId);
+    //     };
+    //     fillMyTable();
+    //     setTimeout(iniciarIntervalo, 1000);
+    //     // }, 3000);
+    //     return () => {
+    //         clearTimeout();
+    //         detenerIntervalo();
+    //     };
+    // }, []);
 
     // const handleCambioPuntaje = () => {
     //     const newPuntaje = Math.floor(Math.random() * 100); // Generar un nuevo puntaje aleatorio
@@ -100,8 +105,8 @@ export const TablePoints = () => {
                             <thead>
                                 <th></th>
                                 {/* <th>Nombre</th> */}
-                                <th>Posicion X</th>
-                                <th>Posicion Y</th>
+                                {/* <th>Posicion X</th>
+                                <th>Posicion Y</th> */}
                                 <th>Tokens ganados</th>
                                 <th>Tokens perdidos</th>
                                 <th>Rpc ganados</th>
@@ -111,14 +116,14 @@ export const TablePoints = () => {
                                 {tableInfo.map((playerInfo, index) => (
                                     <tr key={index}>
                                         <td
-                                        style={{textTransform:"uppercase"}}
+                                            style={{ textTransform: "uppercase" }}
                                             className={
                                                 !playerInfo.playerPoints && "eliminated"
                                             }
                                         >
                                             {playerInfo.playerName}
                                         </td>
-                                        <td
+                                        {/* <td
                                             className={
                                                 !playerInfo.playerPoints && "eliminated"
                                             }
@@ -131,7 +136,7 @@ export const TablePoints = () => {
                                             }
                                         >
                                             {playerInfo.playerPositionY}
-                                        </td>
+                                        </td> */}
                                         <td
                                             className={
                                                 !playerInfo.playerPoints && "eliminated"
