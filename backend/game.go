@@ -88,10 +88,6 @@ type Message struct {
 
 func main() {
 	firstTimeReadTable=true
-	// c := cors.Default()
-	// handler := c.Handler(http.HandlerFunc(imprimir))
-	// http.HandleFunc("/points", imprimir)
-	// go http.ListenAndServe(":9000", handler)
 
 	var wg sync.WaitGroup
 	//lectura por consola del host origen
@@ -123,13 +119,6 @@ func main() {
 	tokensstr = strings.TrimSpace(tokensstr)
 	tokensDefault, _ = strconv.Atoi(tokensstr)
 
-	//creamos canal
-	// chTeam = make(chan Team, 1)
-	// chTeam <- player
-
-	//habilitar el modo escucha (servidor) nodo local
-	// ln, _ := net.Listen("tcp", addressLocal)
-	// defer ln.Close()
 
 	//manejo de concurrencia para aceptar conexion de clientes
 	http.HandleFunc("/ws", handleWebSocket)
@@ -146,25 +135,23 @@ func main() {
 		go manejador(conn, &wg)
 	}
 	wg.Wait()
-	// fmt.Println("Asd")
-	// fmt.Println(cantTeams)
-	// fmt.Println(len(teams))
+
 	game()
 }
-func imprimir(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "application/json")
-	var playersPoints []PlayerPointsTable
-	for _, player := range teams {
-		playersPoints = append(playersPoints, PlayerPointsTable{PlayerName: player.Name, PlayerPoints: player.Tokens, PlayerPositionX: player.positionX, PlayerPositionY: player.positionY, PlayerTokensWon: player.tokensWon, PlayerTokensLost: player.tokensLost, PlayerRpcWon: player.rpcWon})
-	}
-	//SERIALIZAMOS
-	jsonData, err := json.Marshal(playersPoints)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	res.Write(jsonData)
-}
+// func imprimir(res http.ResponseWriter, req *http.Request) {
+// 	res.Header().Set("Content-Type", "application/json")
+// 	var playersPoints []PlayerPointsTable
+// 	for _, player := range teams {
+// 		playersPoints = append(playersPoints, PlayerPointsTable{PlayerName: player.Name, PlayerPoints: player.Tokens, PlayerPositionX: player.positionX, PlayerPositionY: player.positionY, PlayerTokensWon: player.tokensWon, PlayerTokensLost: player.tokensLost, PlayerRpcWon: player.rpcWon})
+// 	}
+// 	//SERIALIZAMOS
+// 	jsonData, err := json.Marshal(playersPoints)
+// 	if err != nil {
+// 		http.Error(res, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	res.Write(jsonData)
+// }
 
 func escuchar() net.Listener {
 	conn, _ := net.Listen("tcp", addressLocal)
@@ -193,36 +180,31 @@ func manejador(conn net.Conn, wg *sync.WaitGroup) {
 	generatePlayer(playerStart)
 	fmt.Println(playerStart)
 
-	// teams = append(teams, &playerStart)
 	cantTeams += 1
 	fmt.Println(len(teams))
-	// for _, t := range teams {
-	// fmt.Println(t.Name)
-	// fmt.Println(t.Tokens)
-	// }
+
 
 }
 
-func enviar(num int) {
-	conn, _ := net.Dial("tcp", addressRemoto)
-	defer conn.Close()
+// func enviar(num int) {
+// 	conn, _ := net.Dial("tcp", addressRemoto)
+// 	defer conn.Close()
 
-	playerStart.Tokens = num
-	//Serializar
-	arrBytesMsg, _ := json.MarshalIndent(playerStart, "", " ")
-	jsonStrMsg := string(arrBytesMsg)
+// 	playerStart.Tokens = num
+// 	//Serializar
+// 	arrBytesMsg, _ := json.MarshalIndent(playerStart, "", " ")
+// 	jsonStrMsg := string(arrBytesMsg)
 
-	fmt.Println("Mensaje enviado: ")
-	fmt.Println(jsonStrMsg)
+// 	fmt.Println("Mensaje enviado: ")
+// 	fmt.Println(jsonStrMsg)
 
-	fmt.Fprintf(conn, jsonStrMsg)
-}
+// 	fmt.Fprintf(conn, jsonStrMsg)
+// }
 
 func game() {
 	var wg sync.WaitGroup
 
 	for ind := range teams {
-		// fmt.Println(player.Name, ind)
 		wg.Add(1)
 		go manage(teams[ind], wgGroup[ind], chGroup[ind], stopGroup[ind], &wg)
 	}
@@ -245,13 +227,10 @@ func manage(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan 
 		if player.inGame {
 			wg.Add(1)
 			go move(player, wg, chPlayer, stop)
-			// playerInfo := <-chPlayer
 			<-chPlayer
 			<-stop
-			// fmt.Printf("%s %d %d %d\n", playerInfo.Name, playerInfo.Tokens, playerInfo.positionX, playerInfo.positionY)
 		}
-		// sendUpdates()
-		// fmt.Println("ASD")
+		
 	}
 }
 
@@ -305,6 +284,12 @@ func move(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop chan bo
 		player.positionY = player.index
 		mutex.Unlock()
 
+	}else if player.positionX == 1 && player.positionY != player.index && !teams[player.positionY-1].inGame {
+		mutex.Lock()
+		player.positionX = 1
+		player.positionY = player.index
+		mutex.Unlock()
+
 	} else {
 		if player.positionY != player.index {
 			player.positionX -= 1
@@ -328,47 +313,28 @@ func collisions(player *Player, wg *sync.WaitGroup, chPlayer chan Player, stop c
 	for ind := range teams {
 		if ind != player.index-1 && !teams[ind].freezed && !player.freezed {
 			if player.positionY == teams[ind].positionY && (teams[ind].positionX-player.positionX == 1 || teams[ind].positionX-player.positionX == -1 || teams[ind].positionX-player.positionX == 0) && teams[ind].inGame {
-				// time.Sleep(5 * time.Second)
-				// player.Tokens += 1
-				// teams[ind].Tokens -= 1
-				// if teams[ind].Tokens <= 0 && teams[ind].inGame {
+
 				result := playRPS()
 				for result == "Tie" {
 					result = playRPS()
 				}
 				if result == "Win" {
-					// player.Tokens += 1
-					// teams[ind].Tokens -= 1
 					player.rpcWon += 1
 					fmt.Printf("%s lose against %s\n", teams[ind].Name, player.Name)
-					// if teams[ind].Tokens == 0{
-					// teams[ind].inGame = false
 					teams[ind].positionX = 1
 					teams[ind].positionY = teams[ind].index
 					teams[ind].delay = 5
 					teams[ind].freezed = true
-					// fmt.Printf("%s fue eliminado del juego\n", teams[ind].Name)
-					// }else{
-					// 	teams[ind].positionX=1
-					// 	teams[ind].positionY=teams[ind].index
-					// }
+				
 
 				} else {
-					// player.Tokens -= 1
-					// teams[ind].Tokens += 1
 					fmt.Printf("%s lose against %s\n", player.Name, teams[ind].Name)
-					// if player.Tokens == 0 {
-					// player.inGame = false
 					teams[ind].rpcWon += 1
 					player.positionX = 1
 					player.positionY = player.index
 					player.delay = 5
 					player.freezed = true
-					// fmt.Printf("%s fue eliminado del juego\n", player.Name)
-					// } else {
-					// player.positionX = 1
-					// player.positionY = player.index
-					// }
+				
 
 				}
 				// }
@@ -439,18 +405,15 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// Agrega el cliente al mapa de clientes conectados
 	clients[conn] = true
 
 	for !isGameFinished() {
-		// Simulamos un cambio en la base de datos cada 5 segundos
 		if updating || firstTimeReadTable {
 			firstTimeReadTable=false
 			mutex.Lock()
-			data := obtenerDatosActualizados() // Obtén los datos actualizados de la base de datos
+			data := obtenerDatosActualizados()
 			mutex.Unlock()
 
-			// Envía los datos actualizados al frontend
 			if err := conn.WriteJSON(data); err != nil {
 				log.Println("Error al enviar datos JSON:", err)
 				break
@@ -459,28 +422,21 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Elimina el cliente del mapa de clientes conectados al salir del ciclo
 	delete(clients, conn)
 }
 
-func sendUpdates() {
-	// for {
-	// Simulamos cambios en la base de datos cada 10 segundos
-	// time.Sleep(10 * time.Second)
+// func sendUpdates() {
 
-	// Lógica para obtener los datos actualizados de la base de datos
-	data := obtenerDatosActualizados()
 
-	// Envía los datos actualizados a todos los clientes conectados
-	broadcastData(data)
-	// }
-}
+// 	data := obtenerDatosActualizados()
+
+// 	// Envía los datos actualizados a todos los clientes conectados
+// 	broadcastData(data)
+// 	// }
+// }
 
 func obtenerDatosActualizados() interface{} {
-	// Lógica para obtener los datos actualizados de la base de datos
-	// Aquí puedes realizar consultas a la base de datos y retornar los resultados
-	
-	// return points
+
 	var arrResponse []PlayerPointsTable
 	for _,player:=range teams{
 		arrResponse = append(arrResponse, PlayerPointsTable{
@@ -499,13 +455,12 @@ func obtenerDatosActualizados() interface{} {
 	return arrResponse
 }
 
-func broadcastData(data interface{}) {
-	// Recorre todos los clientes conectados y envía los datos actualizados
-	for client := range clients {
-		if err := client.WriteJSON(data); err != nil {
-			log.Println("Error al enviar datos JSON a un cliente:", err)
-			client.Close()
-			delete(clients, client)
-		}
-	}
-}
+// func broadcastData(data interface{}) {
+// 	for client := range clients {
+// 		if err := client.WriteJSON(data); err != nil {
+// 			log.Println("Error al enviar datos JSON a un cliente:", err)
+// 			client.Close()
+// 			delete(clients, client)
+// 		}
+// 	}
+// }
